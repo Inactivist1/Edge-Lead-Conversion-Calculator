@@ -62,12 +62,12 @@ svg.ret{width:100%;height:auto;display:block;background:var(--panel);border:1px 
 
 fieldset{border:0;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 legend{font:700 1.05rem/1 var(--f-display);letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;padding:0}
-.f{display:flex;flex-direction:column;gap:5px;min-width:0}
+.f{display:flex;flex-direction:column;justify-content:flex-end;gap:5px;min-width:0}
 .f label{font:600 .78rem/1.2 var(--f-display);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
 .f input,.f select{width:100%;font:500 1.15rem/1 var(--f-num);color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;min-height:48px;font-variant-numeric:tabular-nums;-webkit-appearance:none;appearance:none}
 .f input:focus-visible,.f select:focus-visible,.chip:focus-visible,.seg button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;min-height:48px}
-.seg button{flex:1;border:0;background:var(--panel);color:var(--ink);font:600 1rem/1 var(--f-display);letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
+.seg button{flex:1;white-space:nowrap;padding:0 6px;border:0;background:var(--panel);color:var(--ink);font:600 1rem/1 var(--f-display);letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
 .seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
 .full{grid-column:1/-1}
 .hint{font-size:.85rem;color:var(--muted);margin:0}
@@ -127,12 +127,15 @@ tr.cur td{background:color-mix(in srgb,var(--accent) 12%,transparent)}
     <legend>Conditions and shooter</legend>
     <div class="f"><label for="temp">Temp (°F)</label><input id="temp" type="number" inputmode="numeric" step="1" min="-20" max="120"></div>
     <div class="f"><label for="alt">Altitude (ft)</label><input id="alt" type="number" inputmode="numeric" step="50" min="0" max="12000"></div>
-    <div class="f"><label for="wind">Wind along path (mph)</label><input id="wind" type="number" inputmode="decimal" step="1" min="-30" max="30"></div>
+    <div class="f"><label for="windSpd">Wind speed (mph)</label><input id="windSpd" type="number" inputmode="decimal" step="1" min="0" max="30"></div>
+    <div class="f"><label for="windSeg">Wind direction</label>
+      <div class="seg" id="windSeg"><button type="button" data-v="LR" aria-pressed="true" aria-label="Left to right">L → R</button><button type="button" data-v="RL" aria-pressed="false" aria-label="Right to left">R → L</button></div>
+    </div>
     <div class="f"><label for="lag">Trigger lag (s)</label><input id="lag" type="number" inputmode="decimal" step="0.01" min="0" max="0.5"></div>
-    <div class="f full"><label for="unitSeg">Units</label>
+    <div class="f"><label for="unitSeg">Units</label>
       <div class="seg" id="unitSeg"><button type="button" data-v="mil" aria-pressed="true">Mil</button><button type="button" data-v="moa" aria-pressed="false">MOA</button></div>
     </div>
-    <p class="hint full">Wind: + blows the same way the target moves (less lead), − blows against it (more lead). Trigger lag: 0 for ambush; about 0.05 s if you track.</p>
+    <p class="hint full">Wind: full-value crosswind. Blowing the same way the target moves means less lead; blowing against it means more. Trigger lag: 0 for ambush; about 0.05 s if you track.</p>
   </fieldset>
 
   <section>
@@ -155,10 +158,13 @@ const PRESETS=[
   {k:"500 · 12in",dist:500,width:12,speed:3},
   {k:"700 · IPSC 75%",dist:700,width:13.5,speed:3}
 ];
-const DEF={dist:300,speed:3,width:12,dir:"R",mv:2840,bc:0.334,temp:59,alt:0,wind:0,lag:0,unit:"mil"};
+const DEF={dist:300,speed:3,width:12,dir:"R",mv:2840,bc:0.334,temp:59,alt:0,windSpd:0,windDir:"LR",lag:0,unit:"mil"};
 const KEY="moverLead.v1";
 let S=Object.assign({},DEF);
 try{const s=JSON.parse(localStorage.getItem(KEY)||"null");if(s)S=Object.assign(S,s)}catch(e){}
+delete S.wind;
+/* signed wind along target motion: + same way target moves, - against it */
+function windAlong(){const wR=S.windDir==="LR"?1:-1, tR=S.dir==="R"?1:-1;return Math.abs(S.windSpd||0)*wR*tR}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 
 function cd(m){
@@ -188,7 +194,7 @@ function solve(d){
   const tof=flight(S.mv,S.bc,S.temp,S.alt,[d])[d];
   if(!tof)return null;
   const ips=S.speed*17.6;                       // mph to in/s
-  const windDrift=S.wind*17.6*(tof-(d*36)/(S.mv*12)); // in, Didion lag rule
+  const windDrift=windAlong()*17.6*(tof-(d*36)/(S.mv*12)); // in, Didion lag rule
   const travel=ips*(tof+S.lag);
   const lead=travel-windDrift;                  // in, center lead
   const per=S.unit==="mil"?d*0.036:d*1.047/100;
@@ -197,7 +203,7 @@ function solve(d){
 }
 const $=id=>document.getElementById(id);
 const fmt=(n,p=1)=>Number.isFinite(n)?n.toFixed(p):"–";
-const IDS=["dist","speed","width","mv","bc","temp","alt","wind","lag"];
+const IDS=["dist","speed","width","mv","bc","temp","alt","windSpd","lag"];
 
 function render(){
   const r=solve(S.dist), u=S.unit==="mil"?"mil":"MOA", p=S.unit==="mil"?1:1;
@@ -213,7 +219,7 @@ function render(){
   const ds=[300,400,500,600,700,800], tf=flight(S.mv,S.bc,S.temp,S.alt,ds);
   $("strip").innerHTML=ds.map(d=>{
     const t=tf[d], per=S.unit==="mil"?d*0.036:d*1.047/100;
-    const lead=S.speed*17.6*(t+S.lag)-S.wind*17.6*(t-(d*36)/(S.mv*12));
+    const lead=S.speed*17.6*(t+S.lag)-windAlong()*17.6*(t-(d*36)/(S.mv*12));
     return `<tr class="${d===S.dist?"cur":""}"><td>${d}</td><td>${fmt(t,2)}s</td><td>${fmt(lead/per,1)}</td><td class="h">${fmt((lead-S.width/2)/per,1)}</td></tr>`;
   }).join("");
   PRESETS.forEach((q,i)=>{const b=$("pre"+i);b.setAttribute("aria-pressed",String(q.dist===S.dist&&q.width===S.width&&q.speed===S.speed))});
@@ -221,7 +227,7 @@ function render(){
 
 function drawReticle(r){
   const svg=$("ret"), W=360,H=150, cy=78;
-  const span=Math.max(3,Math.ceil(r.center+r.half+1)); // units shown each side
+  const span=Math.max(3,Math.ceil(Math.abs(r.center)+r.half+1)); // units shown each side
   const px=(W/2-14)/span;
   const sgn=S.dir==="R"?1:-1;
   // target sits left of center when moving right; reticle center is the hold point
@@ -244,10 +250,10 @@ function drawReticle(r){
     <text x="14" y="${H-10}" font-family="Barlow Condensed,sans-serif" font-size="11" letter-spacing="1" fill="var(--muted)">HOLD ● · EDGE ┆ · ${S.unit.toUpperCase()} MARKS</text>`;
 }
 
-function syncInputs(){IDS.forEach(k=>$(k).value=S[k]);segSync("dirSeg","dir");segSync("unitSeg","unit")}
+function syncInputs(){IDS.forEach(k=>$(k).value=S[k]);segSync("dirSeg","dir");segSync("unitSeg","unit");segSync("windSeg","windDir")}
 function segSync(id,key){document.querySelectorAll(`#${id} button`).forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===S[key])))}
 IDS.forEach(k=>$(k).addEventListener("input",e=>{const v=parseFloat(e.target.value);if(Number.isFinite(v)){S[k]=v;save();render()}}));
-[["dirSeg","dir"],["unitSeg","unit"]].forEach(([id,key])=>document.querySelectorAll(`#${id} button`).forEach(b=>b.addEventListener("click",()=>{S[key]=b.dataset.v;segSync(id,key);save();render()})));
+[["dirSeg","dir"],["unitSeg","unit"],["windSeg","windDir"]].forEach(([id,key])=>document.querySelectorAll(`#${id} button`).forEach(b=>b.addEventListener("click",()=>{S[key]=b.dataset.v;segSync(id,key);save();render()})));
 $("presets").innerHTML=PRESETS.map((p,i)=>`<button type="button" class="chip" id="pre${i}" aria-pressed="false">${p.k}</button>`).join("");
 PRESETS.forEach((p,i)=>$("pre"+i).addEventListener("click",()=>{S.dist=p.dist;S.width=p.width;S.speed=p.speed;syncInputs();save();render()}));
 syncInputs();render();

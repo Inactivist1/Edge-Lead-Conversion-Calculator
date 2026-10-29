@@ -84,8 +84,32 @@ About 5 minutes. Do it at home with a signal.
 
  YOUR TWO BUTTONS
   - Mover Lead (your existing home-screen icon, runs in Safari): everyday
-    use, typing in Kestrel numbers, using Get conditions offline later.
-  - Mover Lead Live (opens Bluefy): when the Calypso is out.
+    use and typing in Kestrel numbers. Works with no signal.
+  - Mover Lead Live (opens Bluefy): when the Calypso is out. Needs a signal
+    to open (see below).
+
+
+NO SIGNAL AT THE RANGE? READ THIS
+ Bluefy does NOT load Mover Lead without a signal. Safari saves Mover Lead on
+ your phone for offline use; Bluefy can't. If you open Mover Lead Live with no
+ signal, or Bluefy gets closed and has to reload the page, you'll get an error
+ or a blank page.
+
+ What still works with no signal, once the page is open:
+  - The Bluetooth link to the Calypso (it's phone-to-meter, no internet).
+  - All the hold calculations.
+
+ Routine for a range with no signal:
+  1. Open Mover Lead Live and let Mover Lead load BEFORE you lose signal
+     (at home, on the drive, in the parking lot).
+  2. Connect the Calypso and check your settings while you still have signal.
+  3. Leave Bluefy open. Don't swipe it closed, and switch to other apps as
+     little as possible. Locking the phone is usually fine.
+  4. Backup: your regular Mover Lead icon (Safari) works fully offline. If
+     Bluefy loses the page, use it and type the wind in by hand.
+
+ Test it at home: load Mover Lead in Bluefy, turn on Airplane Mode, swipe
+ Bluefy closed and reopen it. You'll see what happens at the range.
 
 
 AT THE LINE
@@ -121,8 +145,10 @@ TAKING OVER BY HAND
 TROUBLESHOOTING
  - The box says Safari doesn't have Bluetooth: you're in Safari or the
    regular Mover Lead home-screen icon. Use Mover Lead Live (Bluefy) instead.
- - Bluefy shows an error or a blank page: check the address is exactly
-   edgeleadconversioncalculator.vercel.app and that you have a signal.
+ - Bluefy shows an error or a blank page: you probably have no signal.
+   Bluefy can't open Mover Lead offline (see NO SIGNAL AT THE RANGE). Use
+   the regular Mover Lead icon instead. With a signal, check the address
+   is exactly edgeleadconversioncalculator.vercel.app.
  - Tapping Connect does nothing or says Bluetooth isn't available: check
    Settings > Privacy & Security > Bluetooth and make sure Bluefy is on, and
    that Bluetooth is on in Control Center.

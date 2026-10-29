@@ -96,6 +96,8 @@ tr.cur td{background:color-mix(in srgb,var(--accent) 12%,transparent)}
 .calread{font:700 1.05rem/1.3 var(--f-num);font-variant-numeric:tabular-nums;margin:0}
 .caltitle{font:700 .9rem/1 var(--f-display);letter-spacing:.1em;text-transform:uppercase;margin:0}
 .cal details{font-size:.82rem;color:var(--muted)}
+.calguide{font:600 .9rem/1.3 var(--f-display);letter-spacing:.06em;text-transform:uppercase;color:var(--ink);text-decoration:underline;text-underline-offset:3px;align-self:flex-start;padding:6px 0}
+.calguide:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .cal pre{font:500 .78rem/1.4 var(--f-num);white-space:pre-wrap;margin:6px 0 0}
 .notes{font-size:.88rem;color:var(--muted);display:flex;flex-direction:column;gap:6px;margin:0;padding-left:1.1em}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -160,6 +162,7 @@ tr.cur td{background:color-mix(in srgb,var(--accent) 12%,transparent)}
         <p class="calread" id="calRead" aria-live="polite"></p>
         <p class="wxstat" id="calStat">Set the meter on the line with its orientation mark pointing at the target, then connect.</p>
         <details id="calDiag" hidden><summary>Meter details</summary><pre id="calRaw"></pre></details>
+        <a class="calguide" href="calypso.html">Calypso setup guide →</a>
       </div>
       <div id="calOff" hidden>
         <p class="wxstat">Live wind from a Calypso needs a browser with Bluetooth. Safari doesn't have it. On iPhone, install the free Bluefy browser and open this page in it.</p>
@@ -168,6 +171,7 @@ tr.cur td{background:color-mix(in srgb,var(--accent) 12%,transparent)}
           <button type="button" class="calbtn" id="calCopy">Copy this link</button>
         </div>
         <p class="wxstat" id="calCopyStat">In Bluefy, paste the link in the address bar. Android: use Chrome.</p>
+        <a class="calguide" href="calypso.html">Step-by-step Calypso setup guide →</a>
       </div>
     </div>
     <div class="f"><label for="windSpd">Wind speed (mph)</label><input id="windSpd" type="number" inputmode="decimal" step="1" min="0" max="30"></div>
@@ -190,7 +194,7 @@ tr.cur td{background:color-mix(in srgb,var(--accent) 12%,transparent)}
   <ul class="notes">
     <li>Hold the edge number ahead of the target's leading edge, in the direction it moves, and break as the target reaches it.</li>
     <li>Get conditions uses your location: the nearest National Weather Service station for temperature, humidity and pressure (falling back to Open-Meteo), and terrain elevation where you stand. Pull them while you have a signal; they stay saved offline.</li>
-    <li>Calypso: live wind is a 10-second average of the crosswind across your line of fire. Typing a wind speed or tapping a wind direction turns Live wind off.</li>
+    <li>Calypso: live wind is a 10-second average of the crosswind across your line of fire. Typing a wind speed or tapping a wind direction turns Live wind off. <a href="calypso.html">Setup guide</a>.</li>
     <li>Point-mass G7 solution, 100 yd zero. These are starting holds: confirm them on a real mover and write the confirmed number on your arm card.</li>
     <li>On iPhone: open once with a signal, then Share, Add to Home Screen. After that it works with no signal, and your settings stay on this phone.</li>
   </ul>

@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Calypso setup guide · Mover Lead</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Mover Lead">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#141812">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+:root{
+  --bg:#e9ebe4;--panel:#f6f7f2;--ink:#1d221a;--muted:#5d6656;--line:#c9cebf;
+  --accent:#e2571c;--accent-ink:#ffffff;
+  --f-display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"Barlow",system-ui,-apple-system,sans-serif;
+  --f-num:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#141812;--panel:#1d2219;--ink:#e6e9de;--muted:#9aa38f;--line:#323a2c;
+  --accent:#ff7a3d;--accent-ink:#1a0d05;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 var(--f-body);-webkit-text-size-adjust:100%;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.wrap{max-width:620px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:14px 48px}
+.back{display:inline-flex;align-items:center;gap:6px;min-height:44px;font:700 1rem/1 var(--f-display);letter-spacing:.08em;text-transform:uppercase;color:var(--ink);text-decoration:none}
+.back:focus-visible,a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:6px}
+h1{font:700 1.9rem/1.05 var(--f-display);letter-spacing:.02em;text-transform:uppercase;margin:6px 0 8px}
+.lede{color:var(--muted);margin:0 0 18px}
+nav.toc{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 22px}
+nav.toc a{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:999px;padding:8px 12px;font:600 .88rem/1 var(--f-display);letter-spacing:.05em;text-transform:uppercase;text-decoration:none}
+section{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 16px 6px;margin:0 0 16px;scroll-margin-top:12px}
+h2{font:700 1.3rem/1.1 var(--f-display);letter-spacing:.04em;text-transform:uppercase;margin:0 0 10px}
+h3{font:700 1.02rem/1.2 var(--f-display);letter-spacing:.08em;text-transform:uppercase;margin:18px 0 6px}
+h3:first-of-type{margin-top:4px}
+p,li{margin:0 0 10px}
+ol,ul{padding-left:1.3em;margin:0 0 10px}
+li::marker{font-weight:700;color:var(--muted)}
+b{font-weight:600}
+.k{font:700 .92em/1 var(--f-display);letter-spacing:.06em;text-transform:uppercase;border:1px solid var(--line);border-radius:6px;padding:2px 6px;white-space:nowrap;background:var(--bg)}
+.addr{font:500 .95rem/1.3 var(--f-num);word-break:break-all;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:0 0 10px}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 12px}
+.btn{min-height:44px;padding:0 16px;border:1.5px solid var(--ink);border-radius:10px;background:transparent;color:var(--ink);font:700 1rem/1 var(--f-display);letter-spacing:.08em;text-transform:uppercase;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.note{color:var(--muted);font-size:.92rem}
+.warn{border:2px solid var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--panel))}
+.warn h2{color:var(--accent)}
+.sample{font:700 .98rem/1.45 var(--f-num);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:0 0 10px}
+.sample span{display:block;font:500 .85rem/1.4 var(--f-body);color:var(--muted)}
+.two{display:grid;gap:10px;margin:0 0 10px}
+.two div{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--bg)}
+.two b{display:block;font:700 1rem/1.2 var(--f-display);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
+dl{margin:0 0 10px}
+dt{font-weight:600;margin-top:10px}
+dd{margin:2px 0 0;color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="./">← Mover Lead</a>
+  <h1>Calypso setup guide</h1>
+  <p class="lede">Mover Lead can read wind straight from a Calypso ultrasonic wind meter over Bluetooth. It works out the crosswind across your line of fire and fills in the wind fields for you, so your hold updates as the wind changes.</p>
+
+  <nav class="toc" aria-label="Sections">
+    <a href="#need">What you need</a>
+    <a href="#setup">Setup</a>
+    <a href="#signal">No signal?</a>
+    <a href="#line">At the line</a>
+    <a href="#trouble">Troubleshooting</a>
+  </nav>
+
+  <section id="need">
+    <h2>What you need</h2>
+    <ul>
+      <li>A <b>Calypso ultrasonic wind meter</b>, charged and switched on. Built from Calypso's published format for the Ultrasonic Portable (UP10); other Calypso models using the same format should work.</li>
+      <li><b>iPhone:</b> the free <b>Bluefy</b> browser. Safari can't use Bluetooth, so the Calypso feature only works when Mover Lead is opened in Bluefy.</li>
+      <li><b>Android:</b> Chrome. Nothing extra to install.</li>
+    </ul>
+  </section>
+
+  <section id="setup">
+    <h2>One-time setup (iPhone)</h2>
+    <p class="note">About 5 minutes. Do it at home with a signal.</p>
+    <p>Mover Lead's address:</p>
+    <p class="addr" id="addr">https://edgeleadconversioncalculator.vercel.app</p>
+    <div class="row">
+      <a class="btn primary" href="https://apps.apple.com/app/id1492822055" target="_blank" rel="noopener">Get Bluefy</a>
+      <button type="button" class="btn" id="copy">Copy address</button>
+    </div>
+    <p class="note" id="copyStat" aria-live="polite"></p>
+
+    <h3>A. Install Bluefy</h3>
+    <ol>
+      <li>Tap <span class="k">Get Bluefy</span> above, or search the App Store for "Bluefy – Web BLE Browser" (by PNN Soft), and tap Get. It's free.</li>
+      <li>Open Bluefy once. If it asks for Bluetooth access, tap <b>Allow</b>; Mover Lead can't see the Calypso without it.<br><span class="note">Said no by mistake? Settings → Privacy &amp; Security → Bluetooth → turn Bluefy on.</span></li>
+    </ol>
+
+    <h3>B. Open Mover Lead in Bluefy</h3>
+    <ol>
+      <li>Tap <span class="k">Copy address</span> above.</li>
+      <li>In Bluefy, tap the address bar at the top, paste, and tap Go.</li>
+      <li>Scroll to Conditions and Shooter. The Calypso box should now show a <span class="k">Connect Calypso</span> button instead of the "Safari doesn't have Bluetooth" message. That's how you know you're in the right place.</li>
+      <li>If Bluefy asks to use your location, tap <b>Allow</b> (for the Get conditions button).</li>
+    </ol>
+
+    <h3>C. Save it in Bluefy</h3>
+    <ol>
+      <li>While Mover Lead is open, open Bluefy's menu and add the page to your <b>Favorites</b> (bookmarks).</li>
+      <li>Next time, open Bluefy and tap Mover Lead in Favorites. Bluefy may reopen the last page you had open, which skips this step.</li>
+    </ol>
+
+    <h3>D. Enter your settings again</h3>
+    <p>Bluefy and Safari each keep their own copy of your settings. In Bluefy, enter your muzzle velocity, G7 BC, target size and anything else you've changed from the defaults. Bluefy remembers them from then on.</p>
+
+    <h3>E. Make a "Mover Lead Live" button</h3>
+    <p class="note">Bluefy's own icon just says "Bluefy". This gives you a home-screen button with your own name and icon that opens Bluefy.</p>
+    <ol>
+      <li>Open the <b>Shortcuts</b> app (built in; it's in the App Library if it isn't on your home screen).</li>
+      <li>Tap <span class="k">+</span> at the top right to make a new shortcut.</li>
+      <li>Tap <b>Add Action</b> (or the search bar at the bottom), type <b>Open App</b>, and tap it.</li>
+      <li>In the action, tap the word <b>App</b> and pick <b>Bluefy</b>.</li>
+      <li><b>Rename it:</b> tap the shortcut's name at the top (it starts as "Open App" or "New Shortcut"), tap <b>Rename</b>, type <b>Mover Lead Live</b>, and tap Done.</li>
+      <li><b>Add it to the home screen:</b> tap the share button at the bottom (square with an arrow), or the name at the top, then <b>Add to Home Screen</b>.</li>
+      <li>On the next screen you can change the name under the icon and tap the icon to pick a color and symbol, or a photo. Tap <b>Add</b>.</li>
+      <li>Tap Done to close Shortcuts. <b>Mover Lead Live</b> is now on your home screen.</li>
+    </ol>
+    <p class="note">Optional tidy-up: press and hold the plain Bluefy icon → Remove App → Remove from Home Screen. This only hides it; Bluefy stays installed and your new button still works.</p>
+    <p class="note">iPhone can't make a home-screen icon that opens a page directly inside Bluefy. Mover Lead Live opens Bluefy; tap Mover Lead in Favorites if it isn't already showing.</p>
+
+    <h3>Your two buttons</h3>
+    <div class="two">
+      <div><b>Mover Lead</b>Your existing icon, runs in Safari. Everyday use and typing in Kestrel numbers. Works with no signal.</div>
+      <div><b>Mover Lead Live</b>Opens Bluefy. Use it when the Calypso is out. Needs a signal to open.</div>
+    </div>
+  </section>
+
+  <section id="signal" class="warn">
+    <h2>No signal at the range? Read this</h2>
+    <p><b>Bluefy does not load Mover Lead without a signal.</b> Safari saves Mover Lead on your phone for offline use; Bluefy can't. If you open Mover Lead Live with no signal, or Bluefy gets closed and has to reload the page, you'll get an error or a blank page.</p>
+    <p>Once the page is open, these keep working with no signal: the Bluetooth link to the Calypso (phone-to-meter, no internet) and all the hold calculations.</p>
+    <h3>Routine</h3>
+    <ol>
+      <li>Open Mover Lead Live and let Mover Lead load <b>before</b> you lose signal: at home, on the drive, in the parking lot.</li>
+      <li>Connect the Calypso and check your settings while you still have signal.</li>
+      <li>Leave Bluefy open. Don't swipe it closed, and switch to other apps as little as possible. Locking the phone is usually fine.</li>
+      <li><b>Backup:</b> your regular Mover Lead icon (Safari) works fully offline. If Bluefy loses the page, use it and type the wind in by hand.</li>
+    </ol>
+    <p class="note">Test it at home: load Mover Lead in Bluefy, turn on Airplane Mode, swipe Bluefy closed and reopen it. You'll see what happens at the range.</p>
+  </section>
+
+  <section id="line">
+    <h2>At the line</h2>
+    <ol>
+      <li>Set the Calypso on the firing line with its <b>orientation mark pointing at the target</b>. The app reads wind relative to that mark, so this matters.</li>
+      <li>Tap <b>Mover Lead Live</b> (or open Mover Lead in Bluefy) and tap <span class="k">Connect Calypso</span>.</li>
+      <li>Pick your meter from the list. It usually shows as "ULTRASONIC".</li>
+      <li>Leave <span class="k">Live wind</span> ticked. The wind fields fill in and the hold updates about once a second.</li>
+    </ol>
+    <h3>Reading the display</h3>
+    <p class="sample">6.7 mph from 10 o'clock · crosswind 5.8 mph L → R<span>10-second average · battery 80% · filling wind fields</span></p>
+    <ul>
+      <li><b>"from 10 o'clock"</b> is where the wind is coming from. 12 o'clock is the target; 3 o'clock is your right.</li>
+      <li><b>Crosswind</b> is the part of the wind blowing across your line of fire. That's what goes into the wind field. Wind straight from 12 or 6 o'clock gives little or no crosswind.</li>
+      <li>It's a <b>10-second average</b>, so single gusts don't swing your hold.</li>
+    </ul>
+    <h3>Taking over by hand</h3>
+    <ul>
+      <li>Typing a wind speed or tapping L → R / R → L turns <b>Live wind</b> off, so your entry sticks. The meter keeps showing its reading.</li>
+      <li>Tick <b>Live wind</b> again to hand control back to the meter.</li>
+      <li>Tap <span class="k">Disconnect</span> when you're done. If the meter drops off, the wind fields keep the last reading.</li>
+    </ul>
+  </section>
+
+  <section id="trouble">
+    <h2>Troubleshooting</h2>
+    <dl>
+      <dt>The box says Safari doesn't have Bluetooth</dt>
+      <dd>You're in Safari or the regular Mover Lead icon. Use Mover Lead Live (Bluefy) instead.</dd>
+      <dt>Bluefy shows an error or a blank page</dt>
+      <dd>You probably have no signal; Bluefy can't open Mover Lead offline (see <a href="#signal">No signal</a>). Use the regular Mover Lead icon. With a signal, check the address is exactly edgeleadconversioncalculator.vercel.app.</dd>
+      <dt>Connect does nothing, or says Bluetooth isn't available</dt>
+      <dd>Check Settings → Privacy &amp; Security → Bluetooth and make sure Bluefy is on, and that Bluetooth is on in Control Center.</dd>
+      <dt>The meter isn't in the list</dt>
+      <dd>Make sure it's on, charged and within a few yards, and that no other app (such as Anemotracker) is connected to it. Close that app, then try again.</dd>
+      <dt>Won't connect, or keeps dropping</dt>
+      <dd>Switch the meter off and on, then connect again.</dd>
+      <dt>Direction looks reversed</dt>
+      <dd>Wind from your right should show around 3 o'clock and R → L. Check the orientation mark points at the target. If it does and it's still reversed, open <b>Meter details</b> in the Calypso box, take a screenshot, and send it in so the app can be adjusted.</dd>
+      <dt>Battery shows orange</dt>
+      <dd>20% or less. Calypso meters slow down or stop sending data when the battery is low.</dd>
+    </dl>
+    <h3>Good to know</h3>
+    <ul>
+      <li>Live wind is a full-value crosswind measured at the line. Wind downrange can be different. Watch mirage and impacts, and override when the meter and the target disagree.</li>
+      <li>The meter's temperature reading isn't used; it reads high in the sun. Use Get conditions or type temperature in.</li>
+      <li>Kestrel meters can't connect; Kestrel's Bluetooth link is closed to outside apps. Read the Kestrel and type the numbers in. The pressure field takes Kestrel station pressure directly.</li>
+      <li>Holds are starting points. Confirm them on a real mover and write the confirmed numbers on your arm card.</li>
+    </ul>
+  </section>
+
+  <a class="back" href="./">← Back to Mover Lead</a>
+</div>
+<script>
+document.getElementById("copy").addEventListener("click",async()=>{
+  const a=document.getElementById("addr").textContent.trim(), s=document.getElementById("copyStat");
+  try{await navigator.clipboard.writeText(a);s.textContent="Copied. In Bluefy, paste it in the address bar."}
+  catch(e){s.textContent="Press and hold the address above to copy it."}
+});
+if("serviceWorker" in navigator){addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}
+</script>
+</body>
+</html>

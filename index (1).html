@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mover Lead</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Mover Lead">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#141812">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: one-column field card. Big hold readout on top, reticle picture, inputs, then a dope strip for every mover distance. */
+:root{
+  --bg:#e9ebe4;        /* range-card paper, olive-biased */
+  --panel:#f6f7f2;
+  --ink:#1d221a;
+  --muted:#5d6656;
+  --line:#c9cebf;
+  --accent:#e2571c;    /* range-flag orange */
+  --accent-ink:#ffffff;
+  --reticle:#20261d;
+  --target:#7e8a6f;
+  --f-display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"Barlow",system-ui,-apple-system,sans-serif;
+  --f-num:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141812;--panel:#1d2219;--ink:#e6e9de;--muted:#9aa38f;--line:#323a2c;
+  --accent:#ff7a3d;--accent-ink:#1a0d05;--reticle:#e6e9de;--target:#6d7a5d;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141812;--panel:#1d2219;--ink:#e6e9de;--muted:#9aa38f;--line:#323a2c;
+  --accent:#ff7a3d;--accent-ink:#1a0d05;--reticle:#e6e9de;--target:#6d7a5d;color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.45 var(--f-body);-webkit-text-size-adjust:100%}
+.wrap{max-width:560px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:14px 40px;display:flex;flex-direction:column;gap:18px}
+header{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+h1{font:700 1.7rem/1 var(--f-display);letter-spacing:.02em;text-transform:uppercase;margin:0}
+.load{font:500 .78rem/1.3 var(--f-num);color:var(--muted);text-align:right}
+
+.presets{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.presets::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:999px;padding:8px 12px;font:600 .9rem/1 var(--f-display);letter-spacing:.04em;text-transform:uppercase;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+
+.readout{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;display:grid;grid-template-columns:1fr auto;gap:4px 16px;align-items:end}
+.lbl{font:600 .78rem/1.2 var(--f-display);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.hold{grid-column:1/-1;display:flex;align-items:baseline;gap:10px}
+.hold .n{font:700 clamp(4rem,22vw,6.2rem)/.9 var(--f-num);color:var(--accent);font-variant-numeric:tabular-nums;letter-spacing:-.03em}
+.hold .u{font:700 1.6rem/1 var(--f-display);text-transform:uppercase}
+.hold .d{font:500 .95rem/1.25 var(--f-body);color:var(--muted);max-width:12ch}
+.sub{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.sub div{display:flex;flex-direction:column;gap:2px;min-width:0}
+.sub b{font:700 1.05rem/1.1 var(--f-num);font-variant-numeric:tabular-nums}
+
+svg.ret{width:100%;height:auto;display:block;background:var(--panel);border:1px solid var(--line);border-radius:14px;touch-action:manipulation}
+
+fieldset{border:0;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+legend{font:700 1.05rem/1 var(--f-display);letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;padding:0}
+.f{display:flex;flex-direction:column;justify-content:flex-end;gap:5px;min-width:0}
+.f label{font:600 .78rem/1.2 var(--f-display);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.f input,.f select{width:100%;font:500 1.15rem/1 var(--f-num);color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;min-height:48px;font-variant-numeric:tabular-nums;-webkit-appearance:none;appearance:none}
+.f input:focus-visible,.f select:focus-visible,.chip:focus-visible,.seg button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;min-height:48px}
+.seg button{flex:1;white-space:nowrap;padding:0 6px;border:0;background:var(--panel);color:var(--ink);font:600 1rem/1 var(--f-display);letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.full{grid-column:1/-1}
+.hint{font-size:.85rem;color:var(--muted);margin:0}
+
+.strip{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
+table{width:100%;border-collapse:collapse;font:500 .95rem/1.2 var(--f-num);font-variant-numeric:tabular-nums}
+th,td{padding:10px 10px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font:600 .74rem/1.2 var(--f-display);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+th:first-child,td:first-child{text-align:left}
+tr:last-child td{border-bottom:0}
+td.h{color:var(--accent);font-weight:700}
+tr.cur td{background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.wx{grid-column:1/-1;display:flex;flex-direction:column;gap:6px}
+.wxbtn{min-height:48px;border:0;border-radius:10px;background:var(--accent);color:var(--accent-ink);font:700 1.05rem/1 var(--f-display);letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
+.wxbtn:disabled{opacity:.6;cursor:progress}
+.wxbtn:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.wxstat{font:500 .82rem/1.35 var(--f-body);color:var(--muted);margin:0;min-height:1.1em}
+.wxstat.err{color:var(--accent)}
+.notes{font-size:.88rem;color:var(--muted);display:flex;flex-direction:column;gap:6px;margin:0;padding-left:1.1em}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>Mover Lead</h1>
+    <div class="load" id="loadLine"></div>
+  </header>
+
+  <div class="presets" role="group" aria-label="Mover presets" id="presets"></div>
+
+  <section class="readout" aria-live="polite">
+    <div class="lbl">Hold ahead of the leading edge</div>
+    <div class="hold"><span class="n" id="oHold">1.1</span><span class="u" id="oUnit">mil</span></div>
+    <div class="sub">
+      <div><span class="lbl">Center</span><b id="oCenter">–</b></div>
+      <div><span class="lbl">Flight</span><b id="oTof">–</b></div>
+      <div><span class="lbl">Travel</span><b id="oTravel">–</b></div>
+      <div><span class="lbl">Half-width</span><b id="oHalf">–</b></div>
+    </div>
+  </section>
+
+  <svg class="ret" id="ret" viewBox="0 0 360 150" role="img" aria-label="Reticle picture of the hold"></svg>
+
+  <fieldset>
+    <legend>Target</legend>
+    <div class="f"><label for="dist">Distance (yd)</label><input id="dist" type="number" inputmode="numeric" step="1" min="50" max="1500"></div>
+    <div class="f"><label for="speed">Speed (mph)</label><input id="speed" type="number" inputmode="decimal" step="0.1" min="0" max="15"></div>
+    <div class="f"><label for="width">Width (in)</label><input id="width" type="number" inputmode="decimal" step="0.5" min="1" max="48"></div>
+    <div class="f"><label for="dirSeg">Moving</label>
+      <div class="seg" id="dirSeg"><button type="button" data-v="R" aria-pressed="true">→ Right</button><button type="button" data-v="L" aria-pressed="false">← Left</button></div>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Load</legend>
+    <div class="f"><label for="mv">Muzzle velocity (fps)</label><input id="mv" type="number" inputmode="numeric" step="5" min="1500" max="4200"></div>
+    <div class="f"><label for="bc">G7 BC</label><input id="bc" type="number" inputmode="decimal" step="0.001" min="0.1" max="0.8"></div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Conditions and shooter</legend>
+    <div class="wx">
+      <button type="button" class="wxbtn" id="wxBtn">Get conditions here</button>
+      <p class="wxstat" id="wxStat" aria-live="polite"></p>
+    </div>
+    <div class="f"><label for="temp">Temp (°F)</label><input id="temp" type="number" inputmode="numeric" step="1" min="-20" max="120"></div>
+    <div class="f"><label for="rh">Humidity (%)</label><input id="rh" type="number" inputmode="numeric" step="1" min="0" max="100"></div>
+    <div class="f"><label for="press">Station pressure (inHg)</label><input id="press" type="number" inputmode="decimal" step="0.01" min="18" max="31.5"></div>
+    <div class="f"><label for="alt">Altitude (ft)</label><input id="alt" type="number" inputmode="numeric" step="50" min="-500" max="12000"></div>
+    <div class="f"><label for="windSpd">Wind speed (mph)</label><input id="windSpd" type="number" inputmode="decimal" step="1" min="0" max="30"></div>
+    <div class="f"><label for="windSeg">Wind direction</label>
+      <div class="seg" id="windSeg"><button type="button" data-v="LR" aria-pressed="true" aria-label="Left to right">L → R</button><button type="button" data-v="RL" aria-pressed="false" aria-label="Right to left">R → L</button></div>
+    </div>
+    <div class="f"><label for="lag">Trigger lag (s)</label><input id="lag" type="number" inputmode="decimal" step="0.01" min="0" max="0.5"></div>
+    <div class="f"><label for="unitSeg">Units</label>
+      <div class="seg" id="unitSeg"><button type="button" data-v="mil" aria-pressed="true">Mil</button><button type="button" data-v="moa" aria-pressed="false">MOA</button></div>
+    </div>
+    <p class="hint full">Wind: full-value crosswind. Blowing the same way the target moves means less lead; blowing against it means more. Trigger lag: 0 for ambush; about 0.05 s if you track.</p>
+    <p class="hint full">Pressure is station pressure, what a Kestrel reads where you stand, not the sea-level number on a weather report. Typing an altitude resets pressure to standard for that altitude.</p>
+  </fieldset>
+
+  <section>
+    <div class="lbl" style="margin-bottom:8px">Dope strip at these settings</div>
+    <div class="strip"><table><thead><tr><th>Yards</th><th>Flight</th><th>Center</th><th>Edge hold</th></tr></thead><tbody id="strip"></tbody></table></div>
+  </section>
+
+  <ul class="notes">
+    <li>Hold the edge number ahead of the target's leading edge, in the direction it moves, and break as the target reaches it.</li>
+    <li>Get conditions uses your location: the nearest National Weather Service station for temperature, humidity and pressure (falling back to Open-Meteo), and terrain elevation where you stand. Pull them while you have a signal; they stay saved offline.</li>
+    <li>Point-mass G7 solution, 100 yd zero. These are starting holds: confirm them on a real mover and write the confirmed number on your arm card.</li>
+    <li>On iPhone: open once with a signal, then Share, Add to Home Screen. After that it works with no signal, and your settings stay on this phone.</li>
+  </ul>
+</div>
+
+<script>
+const G7=[[0.0,0.1198],[0.05,0.1197],[0.1,0.1196],[0.15,0.1194],[0.2,0.1193],[0.25,0.1194],[0.3,0.1194],[0.35,0.1194],[0.4,0.1193],[0.45,0.1193],[0.5,0.1194],[0.55,0.1193],[0.6,0.1194],[0.65,0.1197],[0.7,0.1202],[0.725,0.1207],[0.75,0.1215],[0.775,0.1226],[0.8,0.1242],[0.825,0.1266],[0.85,0.1306],[0.875,0.1368],[0.9,0.1464],[0.925,0.166],[0.95,0.2054],[0.975,0.2993],[1.0,0.3803],[1.025,0.4015],[1.05,0.4043],[1.075,0.4034],[1.1,0.4014],[1.125,0.3987],[1.15,0.3955],[1.2,0.3884],[1.25,0.381],[1.3,0.3732],[1.35,0.3657],[1.4,0.358],[1.5,0.344],[1.55,0.3376],[1.6,0.3315],[1.65,0.326],[1.7,0.3209],[1.75,0.316],[1.8,0.3117],[1.85,0.3078],[1.9,0.3042],[1.95,0.301],[2.0,0.298],[2.05,0.2951],[2.1,0.2922],[2.15,0.2892],[2.2,0.2864],[2.25,0.2835],[2.3,0.2807],[2.35,0.2779],[2.4,0.2752],[2.45,0.2725],[2.5,0.2697],[2.55,0.267],[2.6,0.2643],[2.65,0.2615],[2.7,0.2588],[2.75,0.2561],[2.8,0.2533],[2.85,0.2506],[2.9,0.2479],[2.95,0.2451],[3.0,0.2424],[3.1,0.2368],[3.2,0.2313],[3.3,0.2258],[3.4,0.2205],[3.5,0.2154],[3.6,0.2106],[3.7,0.206],[3.8,0.2017],[3.9,0.1975],[4.0,0.1935],[4.2,0.1861],[4.4,0.1793],[4.6,0.173],[4.8,0.1672],[5.0,0.1618]];
+const PRESETS=[
+  {k:"300 · 12in",dist:300,width:12,speed:3},
+  {k:"300 · 10in",dist:300,width:10,speed:3},
+  {k:"500 · 12in",dist:500,width:12,speed:3},
+  {k:"700 · IPSC 75%",dist:700,width:13.5,speed:3}
+];
+const DEF={dist:300,speed:3,width:12,dir:"R",mv:2840,bc:0.334,temp:59,alt:0,press:29.92,rh:50,windSpd:0,windDir:"LR",lag:0,unit:"mil"};
+const KEY="moverLead.v1";
+let S=Object.assign({},DEF);
+try{const s=JSON.parse(localStorage.getItem(KEY)||"null");if(s)S=Object.assign(S,s)}catch(e){}
+delete S.wind;
+const stdPress=altFt=>29.92*Math.pow(1-6.8756e-6*altFt,5.2559);   // standard station pressure, inHg
+if(!(S.press>0))S.press=+stdPress(S.alt||0).toFixed(2);
+/* signed wind along target motion: + same way target moves, - against it */
+function windAlong(){const wR=S.windDir==="LR"?1:-1, tR=S.dir==="R"?1:-1;return Math.abs(S.windSpd||0)*wR*tR}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+
+function cd(m){
+  if(m<=G7[0][0])return G7[0][1];
+  for(let i=1;i<G7.length;i++){if(m<=G7[i][0]){const[a,b]=G7[i-1],[c,d]=G7[i];return b+(d-b)*(m-a)/(c-a)}}
+  return G7[G7.length-1][1];
+}
+/* air density ratio vs ICAO standard (1.225 kg/m3) from station pressure, temperature and humidity */
+function atmo(tempF,pressInHg,rhPct){
+  const tC=(tempF-32)*5/9, tK=tC+273.15, P=pressInHg*3386.389;
+  const pv=Math.max(0,Math.min(100,rhPct))/100*610.78*Math.pow(10,7.5*tC/(tC+237.3));
+  const rho=(P-pv)/(287.058*tK)+pv/(461.495*tK);
+  const tR=tempF+459.67;
+  return {dr:rho/1.225, sos:49.0223*Math.sqrt(tR)};
+}
+/* time of flight to each yardage in list, 2D point mass, flat line of sight */
+function flight(mv,bc,tempF,press,rh,yards){
+  const {dr,sos}=atmo(tempF,press,rh);
+  const targets=yards.map(y=>y*3).sort((a,b)=>a-b), out={};
+  let x=0,y=0,vx=mv,vy=0,t=0,i=0;const dt=0.0005,g=32.174;
+  while(i<targets.length&&t<6){
+    const v=Math.hypot(vx,vy), k=2.08551e-4*cd(v/sos)*dr/bc*v;
+    const nx=x+vx*dt;
+    if(nx>=targets[i]){const f=(targets[i]-x)/(vx*dt);out[targets[i]/3]=t+f*dt;i++;continue}
+    vx-=k*vx*dt; vy-=(k*vy+g)*dt; x=nx; y+=vy*dt; t+=dt;
+  }
+  return out;
+}
+function solve(d){
+  const tof=flight(S.mv,S.bc,S.temp,S.press,S.rh,[d])[d];
+  if(!tof)return null;
+  const ips=S.speed*17.6;                       // mph to in/s
+  const windDrift=windAlong()*17.6*(tof-(d*36)/(S.mv*12)); // in, Didion lag rule
+  const travel=ips*(tof+S.lag);
+  const lead=travel-windDrift;                  // in, center lead
+  const per=S.unit==="mil"?d*0.036:d*1.047/100;
+  const half=S.width/2;
+  return {tof,travel,lead,center:lead/per,half:half/per,edge:(lead-half)/per,per};
+}
+const $=id=>document.getElementById(id);
+const fmt=(n,p=1)=>Number.isFinite(n)?n.toFixed(p):"–";
+const IDS=["dist","speed","width","mv","bc","temp","rh","press","alt","windSpd","lag"];
+
+function render(){
+  const r=solve(S.dist), u=S.unit==="mil"?"mil":"MOA", p=S.unit==="mil"?1:1;
+  $("loadLine").textContent=`${S.mv} fps · G7 ${S.bc}`;
+  $("oUnit").textContent=u;
+  if(!r){$("oHold").textContent="–";return}
+  $("oHold").textContent=fmt(r.edge,p);
+  $("oCenter").textContent=fmt(r.center,p);
+  $("oTof").textContent=fmt(r.tof,2)+"s";
+  $("oTravel").textContent=fmt(r.travel,0)+"in";
+  $("oHalf").textContent=fmt(r.half,2);
+  drawReticle(r);
+  const ds=[300,400,500,600,700,800], tf=flight(S.mv,S.bc,S.temp,S.press,S.rh,ds);
+  $("strip").innerHTML=ds.map(d=>{
+    const t=tf[d], per=S.unit==="mil"?d*0.036:d*1.047/100;
+    const lead=S.speed*17.6*(t+S.lag)-windAlong()*17.6*(t-(d*36)/(S.mv*12));
+    return `<tr class="${d===S.dist?"cur":""}"><td>${d}</td><td>${fmt(t,2)}s</td><td>${fmt(lead/per,1)}</td><td class="h">${fmt((lead-S.width/2)/per,1)}</td></tr>`;
+  }).join("");
+  PRESETS.forEach((q,i)=>{const b=$("pre"+i);b.setAttribute("aria-pressed",String(q.dist===S.dist&&q.width===S.width&&q.speed===S.speed))});
+}
+
+function drawReticle(r){
+  const svg=$("ret"), W=360,H=150, cy=78;
+  const span=Math.max(3,Math.ceil(Math.abs(r.center)+r.half+1)); // units shown each side
+  const px=(W/2-14)/span;
+  const sgn=S.dir==="R"?1:-1;
+  // target sits left of center when moving right; reticle center is the hold point
+  const tgtC=W/2 - sgn*r.center*px, tgtW=2*r.half*px, tgtH=Math.min(70,Math.max(26,tgtW*1.1));
+  const edgeX=tgtC+sgn*r.half*px;
+  let ticks="";
+  for(let i=-span;i<=span;i++){const x=W/2+i*px;const big=i%5===0;ticks+=`<line x1="${x}" y1="${cy-(big?9:5)}" x2="${x}" y2="${cy+(big?9:5)}" stroke="var(--reticle)" stroke-width="${i===0?2:1.2}"/>`;
+    if(i!==0&&(Math.abs(i)%1===0)&&span<=8)ticks+=`<text x="${x}" y="${cy+24}" font-family="JetBrains Mono,monospace" font-size="9" fill="var(--muted)" text-anchor="middle">${Math.abs(i)}</text>`}
+  const arrow=sgn>0?`M${tgtC-tgtW/2-18} ${cy-tgtH/2-12} h14 m-5 -4 l5 4 l-5 4`:`M${tgtC+tgtW/2+18} ${cy-tgtH/2-12} h-14 m5 -4 l-5 4 l5 4`;
+  svg.innerHTML=`
+    <rect x="${tgtC-tgtW/2}" y="${cy-tgtH/2}" width="${tgtW}" height="${tgtH}" rx="2" fill="var(--target)" opacity=".55"/>
+    <line x1="${edgeX}" y1="${cy-tgtH/2-4}" x2="${edgeX}" y2="${cy+tgtH/2+4}" stroke="var(--ink)" stroke-width="1.5" stroke-dasharray="3 3"/>
+    <path d="${arrow}" fill="none" stroke="var(--ink)" stroke-width="1.6"/>
+    <line x1="14" y1="${cy}" x2="${W-14}" y2="${cy}" stroke="var(--reticle)" stroke-width="1.2"/>
+    <line x1="${W/2}" y1="12" x2="${W/2}" y2="${H-12}" stroke="var(--reticle)" stroke-width="1.2"/>
+    ${ticks}
+    <circle cx="${W/2}" cy="${cy}" r="5" fill="none" stroke="var(--accent)" stroke-width="2.5"/>
+    <line x1="${edgeX}" y1="${cy-tgtH/2-22}" x2="${W/2}" y2="${cy-tgtH/2-22}" stroke="var(--accent)" stroke-width="2"/>
+    <text x="${(edgeX+W/2)/2}" y="${cy-tgtH/2-28}" font-family="JetBrains Mono,monospace" font-size="12" font-weight="700" fill="var(--accent)" text-anchor="middle">${fmt(r.edge,1)}</text>
+    <text x="14" y="${H-10}" font-family="Barlow Condensed,sans-serif" font-size="11" letter-spacing="1" fill="var(--muted)">HOLD ● · EDGE ┆ · ${S.unit.toUpperCase()} MARKS</text>`;
+}
+
+function syncInputs(){IDS.forEach(k=>$(k).value=S[k]);segSync("dirSeg","dir");segSync("unitSeg","unit");segSync("windSeg","windDir")}
+function segSync(id,key){document.querySelectorAll(`#${id} button`).forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===S[key])))}
+IDS.forEach(k=>$(k).addEventListener("input",e=>{const v=parseFloat(e.target.value);if(Number.isFinite(v)){S[k]=v;
+  if(k==="alt"){S.press=+stdPress(v).toFixed(2);$("press").value=S.press}
+  if(k==="temp"||k==="rh"||k==="press"||k==="alt"){S.wx=null;wxShow()}
+  save();render()}}));
+[["dirSeg","dir"],["unitSeg","unit"],["windSeg","windDir"]].forEach(([id,key])=>document.querySelectorAll(`#${id} button`).forEach(b=>b.addEventListener("click",()=>{S[key]=b.dataset.v;segSync(id,key);save();render()})));
+$("presets").innerHTML=PRESETS.map((p,i)=>`<button type="button" class="chip" id="pre${i}" aria-pressed="false">${p.k}</button>`).join("");
+PRESETS.forEach((p,i)=>$("pre"+i).addEventListener("click",()=>{S.dist=p.dist;S.width=p.width;S.speed=p.speed;syncInputs();save();render()}));
+syncInputs();render();
+
+/* ---------- Get conditions: NWS nearest station, Open-Meteo fallback, terrain elevation ---------- */
+async function getJSON(url,ms=10000){
+  const c=new AbortController(), t=setTimeout(()=>c.abort(),ms);
+  try{const r=await fetch(url,{signal:c.signal,headers:{Accept:"application/geo+json, application/json"}});if(!r.ok)throw new Error("HTTP "+r.status);return await r.json()}
+  finally{clearTimeout(t)}
+}
+function locate(){return new Promise((res,rej)=>{
+  if(!navigator.geolocation)return rej({code:-1});
+  navigator.geolocation.getCurrentPosition(p=>res(p.coords),rej,{enableHighAccuracy:true,timeout:15000,maximumAge:300000});
+})}
+function miles(a,b,c,d){const R=3958.8,r=Math.PI/180,x=Math.sin((c-a)*r/2)**2+Math.cos(a*r)*Math.cos(c*r)*Math.sin((d-b)*r/2)**2;return 2*R*Math.asin(Math.sqrt(x))}
+const val=q=>q&&Number.isFinite(q.value)?q.value:null;
+async function nwsLatest(lat,lon){
+  const pt=await getJSON(`https://api.weather.gov/points/${lat.toFixed(4)},${lon.toFixed(4)}`);
+  const st=await getJSON(pt.properties.observationStations);
+  const near=st.features.map(f=>({id:f.properties.stationIdentifier,name:f.properties.name,
+      mi:miles(lat,lon,f.geometry.coordinates[1],f.geometry.coordinates[0])}))
+    .sort((a,b)=>a.mi-b.mi).slice(0,4);
+  for(const s of near){
+    try{
+      const o=(await getJSON(`https://api.weather.gov/stations/${s.id}/observations/latest`)).properties;
+      const tC=val(o.temperature), rh=val(o.relativeHumidity), alt=val(o.barometricPressure);  // barometricPressure = altimeter setting, Pa
+      const age=(Date.now()-Date.parse(o.timestamp))/60000;
+      if(tC!==null&&alt!==null&&age<180)return {...s,tC,rh,altimInHg:alt/3386.389,time:o.timestamp};
+    }catch(e){}
+  }
+  return null;
+}
+async function getConditions(){
+  const btn=$("wxBtn"), stat=$("wxStat");
+  const say=(t,err)=>{stat.textContent=t;stat.classList.toggle("err",!!err)};
+  btn.disabled=true;say("Finding your location…");
+  let c;
+  try{c=await locate()}catch(e){
+    btn.disabled=false;
+    say(e&&e.code===1?"Location is blocked. Allow location for this site in your phone's settings, or type conditions in.":"Couldn't get your location. Try again, or type conditions in.",true);
+    return;
+  }
+  say("Getting weather…");
+  const lat=c.latitude, lon=c.longitude;
+  const [om,nws]=await Promise.all([
+    getJSON(`https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}&current=temperature_2m,relative_humidity_2m,surface_pressure&temperature_unit=fahrenheit`).catch(()=>null),
+    nwsLatest(lat,lon).catch(()=>null)
+  ]);
+  btn.disabled=false;
+  // elevation where you stand: terrain model first, phone GPS second
+  let elevFt=null, elevSrc="";
+  if(om&&Number.isFinite(om.elevation)){elevFt=om.elevation*3.28084;elevSrc="terrain"}
+  else if(Number.isFinite(c.altitude)){elevFt=c.altitude*3.28084;elevSrc="GPS"}
+  const cur=om&&om.current;
+  let temp=null,rh=null,press=null,src=null;
+  if(nws){
+    temp=nws.tC*9/5+32; rh=nws.rh;
+    if(elevFt!==null)press=nws.altimInHg*Math.pow(1-6.8756e-6*elevFt,5.2559);
+    src={kind:"nws",name:`${nws.id} ${nws.name}`,mi:nws.mi,time:nws.time};
+  }
+  if(cur){
+    if(temp===null&&Number.isFinite(cur.temperature_2m))temp=cur.temperature_2m;
+    if(rh===null&&Number.isFinite(cur.relative_humidity_2m))rh=cur.relative_humidity_2m;
+    if(press===null&&Number.isFinite(cur.surface_pressure))press=cur.surface_pressure/33.8639;
+    if(!src)src={kind:"om",name:"Open-Meteo model",time:cur.time?cur.time+"Z":new Date().toISOString()};
+  }
+  if(temp===null&&press===null){say("Couldn't reach the weather services. Check your signal, or type conditions in.",true);return}
+  if(temp!==null)S.temp=Math.round(temp);
+  if(rh!==null)S.rh=Math.round(rh);
+  if(elevFt!==null)S.alt=Math.round(elevFt/10)*10;
+  if(press!==null)S.press=+press.toFixed(2);
+  src.elev=elevSrc;src.fetched=Date.now();
+  S.wx=src;syncInputs();save();render();wxShow();
+}
+function ago(ms){const m=Math.round(ms/60000);if(m<1)return"just now";if(m<90)return m+" min ago";const h=Math.round(m/60);if(h<48)return h+" hr ago";return Math.round(h/24)+" days ago"}
+function wxShow(){
+  const w=S.wx, stat=$("wxStat");stat.classList.remove("err");
+  if(!w){stat.textContent="Fills temperature, humidity, pressure and altitude for where you are. Needs a signal.";return}
+  const obs=Date.parse(w.time);
+  const parts=[w.kind==="nws"?`${w.name} · ${Math.round(w.mi)} mi away`:w.name];
+  if(Number.isFinite(obs))parts.push(`reading ${ago(Date.now()-obs)}`);
+  if(w.elev)parts.push(`altitude from ${w.elev}`);
+  stat.textContent=parts.join(" · ");
+}
+$("wxBtn").addEventListener("click",getConditions);
+wxShow();
+if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}
+</script>
+</body>
+</html>

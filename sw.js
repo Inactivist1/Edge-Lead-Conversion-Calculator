@@ -1,5 +1,5 @@
 // Mover Lead offline cache. Bump VERSION whenever any file changes.
-const VERSION = "mover-lead-v1";
+const VERSION = "mover-lead-v3";
 const CORE = ["./", "./index.html", "./manifest.webmanifest", "./apple-touch-icon.png", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png"];
 
 self.addEventListener("install", e => {
@@ -15,6 +15,9 @@ self.addEventListener("activate", e => {
 self.addEventListener("fetch", e => {
   const req = e.request;
   if (req.method !== "GET") return;
+  // Live weather: always go to the network, never cache.
+  const host = new URL(req.url).hostname;
+  if (host === "api.weather.gov" || host === "api.open-meteo.com") return;
   // App page: use the network when there is a signal, the saved copy when there isn't.
   if (req.mode === "navigate") {
     e.respondWith(fetch(req).then(r => {

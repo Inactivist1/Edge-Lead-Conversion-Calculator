@@ -86,6 +86,17 @@ tr.cur td{background:color-mix(in srgb,var(--accent) 12%,transparent)}
 .wxbtn:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 .wxstat{font:500 .82rem/1.35 var(--f-body);color:var(--muted);margin:0;min-height:1.1em}
 .wxstat.err{color:var(--accent)}
+.cal{grid-column:1/-1;display:flex;flex-direction:column;gap:6px;border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--panel)}
+.calrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.calbtn{min-height:44px;padding:0 16px;border:1.5px solid var(--ink);border-radius:10px;background:transparent;color:var(--ink);font:700 1rem/1 var(--f-display);letter-spacing:.08em;text-transform:uppercase;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center}
+.calbtn[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.calbtn:focus-visible,.callive input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.callive{display:flex;align-items:center;gap:6px;font:600 .9rem/1 var(--f-display);letter-spacing:.08em;text-transform:uppercase}
+.callive input{width:20px;height:20px;accent-color:var(--accent)}
+.calread{font:700 1.05rem/1.3 var(--f-num);font-variant-numeric:tabular-nums;margin:0}
+.caltitle{font:700 .9rem/1 var(--f-display);letter-spacing:.1em;text-transform:uppercase;margin:0}
+.cal details{font-size:.82rem;color:var(--muted)}
+.cal pre{font:500 .78rem/1.4 var(--f-num);white-space:pre-wrap;margin:6px 0 0}
 .notes{font-size:.88rem;color:var(--muted);display:flex;flex-direction:column;gap:6px;margin:0;padding-left:1.1em}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -139,6 +150,26 @@ tr.cur td{background:color-mix(in srgb,var(--accent) 12%,transparent)}
     <div class="f"><label for="rh">Humidity (%)</label><input id="rh" type="number" inputmode="numeric" step="1" min="0" max="100"></div>
     <div class="f"><label for="press">Station pressure (inHg)</label><input id="press" type="number" inputmode="decimal" step="0.01" min="18" max="31.5"></div>
     <div class="f"><label for="alt">Altitude (ft)</label><input id="alt" type="number" inputmode="numeric" step="50" min="-500" max="12000"></div>
+    <div class="cal" id="calBox">
+      <p class="caltitle">Calypso wind meter</p>
+      <div id="calOn" hidden>
+        <div class="calrow">
+          <button type="button" class="calbtn" id="calBtn" aria-pressed="false">Connect Calypso</button>
+          <label class="callive"><input type="checkbox" id="calFollow" checked> Live wind</label>
+        </div>
+        <p class="calread" id="calRead" aria-live="polite"></p>
+        <p class="wxstat" id="calStat">Set the meter on the line with its orientation mark pointing at the target, then connect.</p>
+        <details id="calDiag" hidden><summary>Meter details</summary><pre id="calRaw"></pre></details>
+      </div>
+      <div id="calOff" hidden>
+        <p class="wxstat">Live wind from a Calypso needs a browser with Bluetooth. Safari doesn't have it. On iPhone, install the free Bluefy browser and open this page in it.</p>
+        <div class="calrow">
+          <a class="calbtn" href="https://apps.apple.com/app/id1492822055" target="_blank" rel="noopener">Get Bluefy</a>
+          <button type="button" class="calbtn" id="calCopy">Copy this link</button>
+        </div>
+        <p class="wxstat" id="calCopyStat">In Bluefy, paste the link in the address bar. Android: use Chrome.</p>
+      </div>
+    </div>
     <div class="f"><label for="windSpd">Wind speed (mph)</label><input id="windSpd" type="number" inputmode="decimal" step="1" min="0" max="30"></div>
     <div class="f"><label for="windSeg">Wind direction</label>
       <div class="seg" id="windSeg"><button type="button" data-v="LR" aria-pressed="true" aria-label="Left to right">L → R</button><button type="button" data-v="RL" aria-pressed="false" aria-label="Right to left">R → L</button></div>
@@ -159,6 +190,7 @@ tr.cur td{background:color-mix(in srgb,var(--accent) 12%,transparent)}
   <ul class="notes">
     <li>Hold the edge number ahead of the target's leading edge, in the direction it moves, and break as the target reaches it.</li>
     <li>Get conditions uses your location: the nearest National Weather Service station for temperature, humidity and pressure (falling back to Open-Meteo), and terrain elevation where you stand. Pull them while you have a signal; they stay saved offline.</li>
+    <li>Calypso: live wind is a 10-second average of the crosswind across your line of fire. Typing a wind speed or tapping a wind direction turns Live wind off.</li>
     <li>Point-mass G7 solution, 100 yd zero. These are starting holds: confirm them on a real mover and write the confirmed number on your arm card.</li>
     <li>On iPhone: open once with a signal, then Share, Add to Home Screen. After that it works with no signal, and your settings stay on this phone.</li>
   </ul>
@@ -274,6 +306,7 @@ function segSync(id,key){document.querySelectorAll(`#${id} button`).forEach(b=>b
 IDS.forEach(k=>$(k).addEventListener("input",e=>{const v=parseFloat(e.target.value);if(Number.isFinite(v)){S[k]=v;
   if(k==="alt"){S.press=+stdPress(v).toFixed(2);$("press").value=S.press}
   if(k==="temp"||k==="rh"||k==="press"||k==="alt"){S.wx=null;wxShow()}
+  if(k==="windSpd"&&e.isTrusted)calManual();
   save();render()}}));
 [["dirSeg","dir"],["unitSeg","unit"],["windSeg","windDir"]].forEach(([id,key])=>document.querySelectorAll(`#${id} button`).forEach(b=>b.addEventListener("click",()=>{S[key]=b.dataset.v;segSync(id,key);save();render()})));
 $("presets").innerHTML=PRESETS.map((p,i)=>`<button type="button" class="chip" id="pre${i}" aria-pressed="false">${p.k}</button>`).join("");
@@ -362,6 +395,86 @@ function wxShow(){
 }
 $("wxBtn").addEventListener("click",getConditions);
 wxShow();
+
+/* ---------- Calypso ultrasonic wind meter over Web Bluetooth (Bluefy on iPhone, Chrome on Android) ----------
+   Protocol: Calypso developer manual 1.8. Service 0x180D, notify characteristic 0x2A39:
+   bytes 0-1 wind speed (uint16 LE, 0.01 m/s), 2-3 wind direction (uint16 LE, degrees the wind comes FROM,
+   clockwise from the orientation mark), 4 battery (x10 %), 5 temperature (-100 C), 6-9 motion sensors. */
+const CAL_AVG_MS=10000, MS2MPH=2.23694;
+const cal={dev:null,samples:[],lastUI:0,last:null,model:"",pkts:0,since:0};
+const hasBT=!!(navigator.bluetooth&&navigator.bluetooth.requestDevice);
+$(hasBT?"calOn":"calOff").hidden=false;
+function calSay(t,err){const s=$("calStat");s.textContent=t;s.classList.toggle("err",!!err)}
+function clock(fromDeg){const c=Math.round(((fromDeg%360)+360)%360/30)%12;return (c===0?12:c)+" o'clock"}
+async function calConnect(){
+  if(cal.dev&&cal.dev.gatt.connected){cal.dev.gatt.disconnect();return}
+  calSay("Pick your Calypso in the list…");
+  let dev;
+  try{
+    dev=await navigator.bluetooth.requestDevice({
+      filters:[{namePrefix:"ULTRA"},{namePrefix:"Calypso"},{namePrefix:"CALYPSO"},{services:[0x180d]}],
+      optionalServices:[0x180d,0x180a]});
+  }catch(e){calSay(e&&e.name==="NotFoundError"?"No meter picked. Make sure the Calypso is on and close by, then try again.":"Bluetooth isn't available: "+(e&&e.message||e),true);return}
+  cal.dev=dev;
+  dev.addEventListener("gattserverdisconnected",calGone);
+  try{
+    calSay("Connecting to "+(dev.name||"meter")+"…");
+    const srv=await dev.gatt.connect();
+    const ch=await (await srv.getPrimaryService(0x180d)).getCharacteristic(0x2a39);
+    ch.addEventListener("characteristicvaluechanged",e=>calData(e.target.value));
+    await ch.startNotifications();
+    cal.samples=[];cal.pkts=0;cal.since=Date.now();
+    $("calBtn").textContent="Disconnect";$("calBtn").setAttribute("aria-pressed","true");
+    $("calDiag").hidden=false;
+    calSay("Connected to "+(dev.name||"meter")+". Waiting for wind…");
+    try{const info=await srv.getPrimaryService(0x180a);
+        cal.model=new TextDecoder().decode(await (await info.getCharacteristic(0x2a24)).readValue()).trim()}catch(e){}
+  }catch(e){calSay("Couldn't connect: "+(e&&e.message||e)+". Turn the meter off and on, then try again.",true);try{dev.gatt.disconnect()}catch(_){}}
+}
+function calGone(){
+  $("calBtn").textContent="Connect Calypso";$("calBtn").setAttribute("aria-pressed","false");
+  calSay(cal.last?"Disconnected. The wind fields keep the last reading.":"Disconnected.",!!cal.last);
+}
+function calData(dv){
+  if(!dv||dv.byteLength<4)return;
+  const now=Date.now(), ms=dv.getUint16(0,true)/100, from=dv.getUint16(2,true)%360;
+  const r=from*Math.PI/180;
+  cal.pkts++;
+  cal.last={ms,from,bat:dv.byteLength>4?dv.getUint8(4)*10:null,tC:dv.byteLength>5?dv.getUint8(5)-100:null,
+    hex:Array.from(new Uint8Array(dv.buffer,dv.byteOffset,dv.byteLength)).map(b=>b.toString(16).padStart(2,"0")).join(" ")};
+  // + across = wind coming from the right of the line of fire
+  cal.samples.push({t:now,x:ms*Math.sin(r),y:ms*Math.cos(r),ms});
+  while(cal.samples.length&&now-cal.samples[0].t>CAL_AVG_MS)cal.samples.shift();
+  if(now-cal.lastUI>=900){cal.lastUI=now;calUpdate()}
+}
+function calUpdate(){
+  const n=cal.samples.length;if(!n)return;
+  let x=0,y=0,sp=0;cal.samples.forEach(s=>{x+=s.x;y+=s.y;sp+=s.ms});x/=n;y/=n;sp/=n;
+  const fromAvg=(Math.atan2(x,y)*180/Math.PI+360)%360;
+  const crossMph=Math.abs(x)*MS2MPH, dir=x>0?"RL":"LR";       // from the right blows right-to-left
+  const secs=Math.round((cal.samples[n-1].t-cal.samples[0].t)/1000);
+  $("calRead").textContent=`${(sp*MS2MPH).toFixed(1)} mph from ${clock(fromAvg)} · crosswind ${crossMph.toFixed(1)} mph ${dir==="RL"?"R → L":"L → R"}`;
+  const b=cal.last.bat;
+  calSay(`${secs<9?secs+"-second":"10-second"} average${b!==null?" · battery "+b+"%":""}${$("calFollow").checked?" · filling wind fields":" · Live wind off"}`,b!==null&&b<=20);
+  $("calRaw").textContent=[cal.model?"Model: "+cal.model:null,`Now: ${cal.last.ms.toFixed(2)} m/s from ${cal.last.from}°`,
+    cal.last.tC!==null?`Sensor temp: ${cal.last.tC} °C (reads high in sun; not used)`:null,
+    `Packets: ${cal.pkts} (${(cal.pkts/Math.max(1,(Date.now()-cal.since)/1000)).toFixed(1)}/s)`,`Raw: ${cal.last.hex}`].filter(Boolean).join("\n");
+  if($("calFollow").checked){
+    S.windSpd=+crossMph.toFixed(1);S.windDir=dir;$("windSpd").value=S.windSpd;segSync("windSeg","windDir");save();render();
+  }
+}
+function calManual(){if(cal.dev&&cal.dev.gatt.connected&&$("calFollow").checked){$("calFollow").checked=false;calUpdate()}}
+if(hasBT){
+  $("calBtn").addEventListener("click",calConnect);
+  $("calFollow").addEventListener("change",()=>calUpdate());
+  document.querySelectorAll("#windSeg button").forEach(b=>b.addEventListener("click",calManual));
+}else{
+  $("calCopy").addEventListener("click",async()=>{
+    const url=location.href.split("#")[0];
+    try{await navigator.clipboard.writeText(url);$("calCopyStat").textContent="Copied. Open Bluefy and paste it in the address bar."}
+    catch(e){$("calCopyStat").textContent="Copy this address into Bluefy: "+url}
+  });
+}
 if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}
 </script>
 </body>

@@ -1,5 +1,5 @@
 // Mover Lead offline cache. Bump VERSION whenever any file changes.
-const VERSION = "mover-lead-v3";
+const VERSION = "mover-lead-v4";
 const CORE = ["./", "./index.html", "./manifest.webmanifest", "./apple-touch-icon.png", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png"];
 
 self.addEventListener("install", e => {

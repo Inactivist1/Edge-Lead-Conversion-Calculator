@@ -140,6 +140,17 @@ tr.cur td{background:color-mix(in srgb,var(--accent) 12%,transparent)}
     <legend>Load</legend>
     <div class="f"><label for="mv">Muzzle velocity (fps)</label><input id="mv" type="number" inputmode="numeric" step="5" min="1500" max="4200"></div>
     <div class="f"><label for="bc">G7 BC</label><input id="bc" type="number" inputmode="decimal" step="0.001" min="0.1" max="0.8"></div>
+    <div class="f"><label for="wt">Bullet weight (gr)</label><input id="wt" type="number" inputmode="decimal" step="0.5" min="20" max="800"></div>
+    <div class="f"><label for="dia">Bullet diameter (in)</label><input id="dia" type="number" inputmode="decimal" step="0.001" min="0.17" max="0.51"></div>
+    <div class="f"><label for="blen">Bullet length (in)</label><input id="blen" type="number" inputmode="decimal" step="0.005" min="0.4" max="3"></div>
+    <div class="f"><label for="twist">Twist (in per turn)</label><input id="twist" type="number" inputmode="decimal" step="0.25" min="4" max="20"></div>
+    <div class="f"><label for="twSeg">Twist direction</label>
+      <div class="seg" id="twSeg"><button type="button" data-v="R" aria-pressed="true" aria-label="Right-hand twist">Right</button><button type="button" data-v="L" aria-pressed="false" aria-label="Left-hand twist">Left</button></div>
+    </div>
+    <div class="f"><label for="spinSeg">Spin drift</label>
+      <div class="seg" id="spinSeg"><button type="button" data-v="on" aria-pressed="true">On</button><button type="button" data-v="off" aria-pressed="false">Off</button></div>
+    </div>
+    <p class="hint full" id="spinNote" aria-live="polite"></p>
   </fieldset>
 
   <fieldset>
@@ -195,7 +206,7 @@ tr.cur td{background:color-mix(in srgb,var(--accent) 12%,transparent)}
     <li>Hold the edge number ahead of the target's leading edge, in the direction it moves, and break as the target reaches it.</li>
     <li>Get conditions uses your location: the nearest National Weather Service station for temperature, humidity and pressure (falling back to Open-Meteo), and terrain elevation where you stand. Pull them while you have a signal; they stay saved offline.</li>
     <li>Calypso: live wind is a 10-second average of the crosswind across your line of fire. Typing a wind speed or tapping a wind direction turns Live wind off. <a href="calypso.html">Setup guide</a>.</li>
-    <li>Point-mass G7 solution, 100 yd zero. These are starting holds: confirm them on a real mover and write the confirmed number on your arm card.</li>
+    <li>Point-mass G7 solution, 100 yd zero. Spin drift uses the Litz formula with stability from the Miller twist rule; measure your bullet length, since it drives stability. These are starting holds: confirm them on a real mover and write the confirmed number on your arm card.</li>
     <li>On iPhone: open once with a signal, then Share, Add to Home Screen. After that it works with no signal, and your settings stay on this phone.</li>
   </ul>
 </div>
@@ -208,7 +219,7 @@ const PRESETS=[
   {k:"500 · 12in",dist:500,width:12,speed:3},
   {k:"700 · IPSC 75%",dist:700,width:13.5,speed:3}
 ];
-const DEF={dist:300,speed:3,width:12,dir:"R",mv:2840,bc:0.334,temp:59,alt:0,press:29.92,rh:50,windSpd:0,windDir:"LR",lag:0,unit:"mil"};
+const DEF={dist:300,speed:3,width:12,dir:"R",mv:2840,bc:0.334,temp:59,alt:0,press:29.92,rh:50,windSpd:0,windDir:"LR",lag:0,unit:"mil",wt:135,dia:0.257,blen:1.40,twist:8,twDir:"R",spin:"on"};
 const KEY="moverLead.v1";
 let S=Object.assign({},DEF);
 try{const s=JSON.parse(localStorage.getItem(KEY)||"null");if(s)S=Object.assign(S,s)}catch(e){}
@@ -251,18 +262,29 @@ function solve(d){
   const ips=S.speed*17.6;                       // mph to in/s
   const windDrift=windAlong()*17.6*(tof-(d*36)/(S.mv*12)); // in, Didion lag rule
   const travel=ips*(tof+S.lag);
-  const lead=travel-windDrift;                  // in, center lead
+  const spin=spinAlong(tof);                    // in, spin drift in the target's direction of travel
+  const lead=travel-windDrift-spin;             // in, center lead
   const per=S.unit==="mil"?d*0.036:d*1.047/100;
   const half=S.width/2;
-  return {tof,travel,lead,center:lead/per,half:half/per,edge:(lead-half)/per,per};
+  return {tof,travel,lead,spin,center:lead/per,half:half/per,edge:(lead-half)/per,per};
 }
+/* Gyroscopic stability, Miller twist rule with velocity and air-density corrections */
+function stability(){
+  const d=S.dia, t=S.twist/d, l=S.blen/d;
+  if(!(d>0&&t>0&&l>0&&S.wt>0))return NaN;
+  const sg=30*S.wt/(t*t*d*d*d*l*(1+l*l));
+  return sg*Math.cbrt(S.mv/2800)*((S.temp+460)/519)*(29.92/S.press);
+}
+/* Spin drift, Litz: SD(in) = 1.25*(Sg+1.2)*TOF^1.83, toward the twist direction */
+function spinIn(tof){if(S.spin!=="on")return 0;const sg=stability();return sg>0?1.25*(sg+1.2)*Math.pow(tof,1.83):0}
+function spinAlong(tof){return spinIn(tof)*(S.twDir==="R"?1:-1)*(S.dir==="R"?1:-1)}
 const $=id=>document.getElementById(id);
 const fmt=(n,p=1)=>Number.isFinite(n)?n.toFixed(p):"–";
-const IDS=["dist","speed","width","mv","bc","temp","rh","press","alt","windSpd","lag"];
+const IDS=["dist","speed","width","mv","bc","wt","dia","blen","twist","temp","rh","press","alt","windSpd","lag"];
 
 function render(){
   const r=solve(S.dist), u=S.unit==="mil"?"mil":"MOA", p=S.unit==="mil"?1:1;
-  $("loadLine").textContent=`${S.mv} fps · G7 ${S.bc}`;
+  $("loadLine").textContent=`${S.mv} fps · G7 ${S.bc} · 1:${S.twist} ${S.twDir}`;
   $("oUnit").textContent=u;
   if(!r){$("oHold").textContent="–";return}
   $("oHold").textContent=fmt(r.edge,p);
@@ -271,10 +293,11 @@ function render(){
   $("oTravel").textContent=fmt(r.travel,0)+"in";
   $("oHalf").textContent=fmt(r.half,2);
   drawReticle(r);
+  spinShow(r);
   const ds=[300,400,500,600,700,800], tf=flight(S.mv,S.bc,S.temp,S.press,S.rh,ds);
   $("strip").innerHTML=ds.map(d=>{
     const t=tf[d], per=S.unit==="mil"?d*0.036:d*1.047/100;
-    const lead=S.speed*17.6*(t+S.lag)-windAlong()*17.6*(t-(d*36)/(S.mv*12));
+    const lead=S.speed*17.6*(t+S.lag)-windAlong()*17.6*(t-(d*36)/(S.mv*12))-spinAlong(t);
     return `<tr class="${d===S.dist?"cur":""}"><td>${d}</td><td>${fmt(t,2)}s</td><td>${fmt(lead/per,1)}</td><td class="h">${fmt((lead-S.width/2)/per,1)}</td></tr>`;
   }).join("");
   PRESETS.forEach((q,i)=>{const b=$("pre"+i);b.setAttribute("aria-pressed",String(q.dist===S.dist&&q.width===S.width&&q.speed===S.speed))});
@@ -305,14 +328,23 @@ function drawReticle(r){
     <text x="14" y="${H-10}" font-family="Barlow Condensed,sans-serif" font-size="11" letter-spacing="1" fill="var(--muted)">HOLD ● · EDGE ┆ · ${S.unit.toUpperCase()} MARKS</text>`;
 }
 
-function syncInputs(){IDS.forEach(k=>$(k).value=S[k]);segSync("dirSeg","dir");segSync("unitSeg","unit");segSync("windSeg","windDir")}
+function spinShow(r){
+  const sg=stability(), n=$("spinNote");
+  if(!Number.isFinite(sg)){n.textContent="Enter bullet weight, diameter, length and twist for spin drift.";return}
+  const tag=sg<1?" — UNSTABLE, check twist and bullet":sg<1.4?" — marginal":"";
+  if(S.spin!=="on"){n.textContent=`Stability (Sg) ${sg.toFixed(2)}${tag}. Spin drift off.`;return}
+  const sdIn=spinIn(r.tof), side=S.twDir==="R"?"right":"left";
+  const helps=Math.sign(spinAlong(r.tof))>0;
+  n.textContent=`Stability (Sg) ${sg.toFixed(2)}${tag}. Spin drift at ${S.dist} yd: ${sdIn.toFixed(1)} in ${side} (${(sdIn/r.per).toFixed(2)} ${S.unit==="mil"?"mil":"MOA"}), ${helps?"less":"more"} lead with the target moving ${S.dir==="R"?"right":"left"}.`;
+}
+function syncInputs(){IDS.forEach(k=>$(k).value=S[k]);segSync("dirSeg","dir");segSync("unitSeg","unit");segSync("windSeg","windDir");segSync("twSeg","twDir");segSync("spinSeg","spin")}
 function segSync(id,key){document.querySelectorAll(`#${id} button`).forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===S[key])))}
 IDS.forEach(k=>$(k).addEventListener("input",e=>{const v=parseFloat(e.target.value);if(Number.isFinite(v)){S[k]=v;
   if(k==="alt"){S.press=+stdPress(v).toFixed(2);$("press").value=S.press}
   if(k==="temp"||k==="rh"||k==="press"||k==="alt"){S.wx=null;wxShow()}
   if(k==="windSpd"&&e.isTrusted)calManual();
   save();render()}}));
-[["dirSeg","dir"],["unitSeg","unit"],["windSeg","windDir"]].forEach(([id,key])=>document.querySelectorAll(`#${id} button`).forEach(b=>b.addEventListener("click",()=>{S[key]=b.dataset.v;segSync(id,key);save();render()})));
+[["dirSeg","dir"],["unitSeg","unit"],["windSeg","windDir"],["twSeg","twDir"],["spinSeg","spin"]].forEach(([id,key])=>document.querySelectorAll(`#${id} button`).forEach(b=>b.addEventListener("click",()=>{S[key]=b.dataset.v;segSync(id,key);save();render()})));
 $("presets").innerHTML=PRESETS.map((p,i)=>`<button type="button" class="chip" id="pre${i}" aria-pressed="false">${p.k}</button>`).join("");
 PRESETS.forEach((p,i)=>$("pre"+i).addEventListener("click",()=>{S.dist=p.dist;S.width=p.width;S.speed=p.speed;syncInputs();save();render()}));
 syncInputs();render();
